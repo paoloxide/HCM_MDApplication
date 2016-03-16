@@ -45,14 +45,19 @@ public class ExcelUtilities {
               return"";
             }
   }
-  
+  /**
+   * Enhanced version of getCellData using in moving
+   * Excel cursors freely.
+   * 
+   * @author jerrick.m.falogme
+   */
   public static String getCellData(int RowNum, int ColNum, String type) throws Exception{
 	  
   	try{	        	   
       	  Cell = ExcelWSheet.getRow(RowNum).getCell(ColNum);
       	  switch(type){
       	  	case "date":
-      	  		System.out.println("the value is a Date");
+      	  		System.out.println("Excel Input has been passed as a Date");
       	  		Cell.setCellType(Cell.CELL_TYPE_NUMERIC);
       	  		Date date = Cell.getDateCellValue();
       	  		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
@@ -60,12 +65,13 @@ public class ExcelUtilities {
       	  		System.out.println("the value is now: "+dateCellData);
       	  			return dateCellData;
       	  	case "text":
-      	  		System.out.println("the value is a string");
+      	  		System.out.println("Excel Input has been passed as a string");
       	  		Cell.setCellType(Cell.CELL_TYPE_STRING);
       	  		String stringCellData = Cell.getStringCellValue();
       	  			return stringCellData;
       	  	case "time":
-      	  		System.out.println("the value is a time");
+      	  		System.out.println("Excel Input has been passed as a time");
+      	  		Cell.setCellType(Cell.CELL_TYPE_NUMERIC);
       	  		Date time = Cell.getDateCellValue();
       	  		SimpleDateFormat timesdf = new SimpleDateFormat("HH:mm");
       	  		String timeCellData = timesdf.format(time);

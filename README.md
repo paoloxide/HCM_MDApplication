@@ -1,2 +1,2 @@
-# HCM_MDApplication
-Repository for Java application for Manage Department configuration
+# HCM_Selenium
+Repository for the application to invoke selenium.

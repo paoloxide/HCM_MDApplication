@@ -60,8 +60,8 @@
 							<exclude>**/*Test.*</exclude>
 						</excludes>
 						<suiteXmlFiles>
-							<!--suiteXmlFile>testng-suites\testng-${testNGSuiteName}.xml</suiteXmlFile-->
-							<suiteXmlFile>testng-suites\testng-projectname-regression-test.xml</suiteXmlFile>
+							<suiteXmlFile>testng-suites\testng-${testNGSuiteName}.xml</suiteXmlFile>
+							<!--suiteXmlFile>testng-suites\testng-projectname-regression-test.xml</suiteXmlFile-->
 						</suiteXmlFiles>
 		            </configuration>
 		        </plugin>
