@@ -1,8 +1,7 @@
 package hcm.tests.testscripts.workforcedevelopment;
 
 import static util.ReportLogger.logFailure;
-
-import java.util.List;
+import static util.ReportLogger.log;
 
 import org.openqa.selenium.By;
 import org.testng.annotations.Test;
@@ -15,7 +14,7 @@ import hcm.pageobjects.LoginPage;
 import hcm.pageobjects.TaskListManagerTopPage;
 
 public class ManageGoalValueSets extends BaseTest{
-	private final static int MAX_TIME_OUT = 60; //in seconds....
+	private final static int MAX_TIME_OUT = 30; //in seconds....
 	
 	@Test
 	public void a_test() throws Exception  {
@@ -61,12 +60,12 @@ public class ManageGoalValueSets extends BaseTest{
 		task.clickTask("Manage Implementation Projects");
 		Thread.sleep(1000);
 		
-		int inputs = 2;
-		int inputLabel = 1;
+		int inputs = 3;
+		int inputLabel = 2;
+		int labelGroup = 1;
 		int curTestData = 7;
 		String labelLocator ="", labelLocatorPath="";
-		String dataLocator, dataPath, rawDataLocPath, dataLocatorPath, gotoTaskPath, inputValue, type;
-		List<String> tableInputs = null;
+		String dataLocator, dataPath, gotoTaskPath, type;
 		
 		task.waitForElementToBeClickable(MAX_TIME_OUT, "//button[text()='D']");
 		Thread.sleep(2000);
@@ -85,7 +84,7 @@ public class ManageGoalValueSets extends BaseTest{
 		task.clickSearchButton();
 		Thread.sleep(250);
 		task.clickSearchButton();
-		//takeScreenshot();
+		takeScreenshot();
 		
 		TaskUtilities.customWaitForElementVisibility(searchDataLink, MAX_TIME_OUT);
 		TaskUtilities.retryingFindClick(By.xpath("//h2[text()='Search Results']"));
@@ -149,13 +148,29 @@ public class ManageGoalValueSets extends BaseTest{
 				Thread.sleep(250);
 			
 				curTestData += 1;//Input all data...
+				labelLocator = getExcelData(inputLabel, curTestData, "text");
 				while(!labelLocator.contentEquals("Value") && getExcelData(inputLabel, curTestData, "text").length()>0){
-					labelLocator = getExcelData(inputLabel, curTestData, "text");
+					System.out.println("\n**********");
+					String labelGroupLocator = getExcelData(labelGroup, curTestData, "text");
 					type = TaskUtilities.getdataLocatorType(labelLocator);
-					labelLocatorPath = TaskUtilities.retryingSearchInput(labelLocator);
+					if(!labelGroupLocator.contentEquals("Independent Value Set")){
+						
+						labelLocatorPath = TaskUtilities.retryingSearchInput(labelLocator);
+					} else{
+						
+						labelLocatorPath = "//tr[contains(@id,'independent')]/td/span/input";
+					}
+
 					dataLocator = getExcelData(inputs, curTestData, type);
-					
-					TaskUtilities.customWaitForElementVisibility(labelLocatorPath, MAX_TIME_OUT);
+					TaskUtilities.customWaitForElementVisibility(labelLocatorPath, MAX_TIME_OUT, new CustomRunnable() {
+						
+						@Override
+						public void customRun() throws Exception {
+							// TODO Auto-generated method stub
+							TaskUtilities.jsCheckMissedInput();
+							TaskUtilities.jsCheckMessageContainer();
+						}
+					});
 					
 					if(!labelLocatorPath.contains("select")){
 						
@@ -165,19 +180,28 @@ public class ManageGoalValueSets extends BaseTest{
 							takeScreenshot();
 							//driver.findElement(By.xpath(labelLocatorPath)).clear();
 							//task.enterTextByXpath(labelLocatorPath, dataLocator);
+							
 						} else if(labelLocatorPath.contains("select")){
 							
 							TaskUtilities.consolidatedInputSelector(labelLocatorPath, dataLocator);
+							
+						}
+					
+					//Input on this label triggers others...
+					if(labelLocator.contentEquals("Validation Type")){
+							String newLabelLocator = getExcelData(inputLabel, curTestData+4, "text");
+							TaskUtilities.customWaitForElementVisibility("//td/label[text()='"+newLabelLocator+"']", MAX_TIME_OUT);
+						} else if(labelLocator.contentEquals("Value Data Type")){
+							String newLabelLocator = getExcelData(inputLabel, curTestData+1, "text");
+							TaskUtilities.customWaitForElementVisibility("//td/label[text()='"+newLabelLocator+"']", MAX_TIME_OUT);
 						}
 					
 					curTestData += 1;
+					labelLocator = getExcelData(inputLabel, curTestData, "text");
 				}
 				
-				TaskUtilities.customWaitForElementVisibility("//button[text()='Save']", MAX_TIME_OUT);
-				Thread.sleep(250);
-				TaskUtilities.jsFindThenClick("//button[text()='Save']");
-				Thread.sleep(250);
-				TaskUtilities.customWaitForElementVisibility("//button[text()='Manage Values']", MAX_TIME_OUT, new CustomRunnable() {
+				takeScreenshot();
+				TaskUtilities.customWaitForElementVisibility("//button[text()='Save']", MAX_TIME_OUT, new CustomRunnable() {
 					
 					@Override
 					public void customRun() throws Exception {
@@ -186,15 +210,34 @@ public class ManageGoalValueSets extends BaseTest{
 						TaskUtilities.jsCheckMissedInput();
 					}
 				});
+				Thread.sleep(250);
+				TaskUtilities.jsFindThenClick("//button[text()='Save']");
+				Thread.sleep(250);
+				
+				
+				TaskUtilities.customWaitForElementEnablement(By.xpath("//button[text()='Manage Values']"), MAX_TIME_OUT, new CustomRunnable() {
+					
+					@Override
+					public void customRun() throws Exception {
+						TaskUtilities.jsCheckMissedInput();
+						TaskUtilities.jsCheckMessageContainer();
+					}
+				});
 				
 				TaskUtilities.jsFindThenClick("//button[text()='Manage Values']");
 				TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Values']", MAX_TIME_OUT);
 				Thread.sleep(250);
+				takeScreenshot();
 				TaskUtilities.jsFindThenClick("//a/img[@title='Create']");
 				TaskUtilities.customWaitForElementVisibility("//h1[text()='Create Value']", MAX_TIME_OUT);
 				Thread.sleep(250);
 				
 				while(getExcelData(inputLabel, curTestData, "text").length()>0){
+					System.out.println("\n**********");
+					labelLocator = getExcelData(inputLabel, curTestData, "text");
+					labelLocatorPath = TaskUtilities.retryingSearchInput(labelLocator);
+					type = TaskUtilities.getdataLocatorType(labelLocator);
+					dataLocator = getExcelData(inputs, curTestData, type);
 					
 					if(!labelLocatorPath.contains("select")){
 							
@@ -209,8 +252,9 @@ public class ManageGoalValueSets extends BaseTest{
 					curTestData += 1;
 				}
 				Thread.sleep(250);
+				takeScreenshot();
 				TaskUtilities.jsFindThenClick("//button[text()='ave and Close']");
-				TaskUtilities.customWaitForElementVisibility("//button[text()='Manage Values']", MAX_TIME_OUT, new CustomRunnable() {
+				TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Values']", MAX_TIME_OUT, new CustomRunnable() {
 					
 					@Override
 					public void customRun() throws Exception {
@@ -222,15 +266,31 @@ public class ManageGoalValueSets extends BaseTest{
 				
 				TaskUtilities.customWaitForElementVisibility("//button[text()='D']", MAX_TIME_OUT);
 				TaskUtilities.jsFindThenClick("//button[text()='D']");	
-				TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Goal Value Set']", MAX_TIME_OUT);
+				TaskUtilities.customWaitForElementVisibility("//h1[text()='Create Value Set']", MAX_TIME_OUT);
 				Thread.sleep(250);
 				TaskUtilities.jsFindThenClick("//button[text()='ave and Close']");
 			
 			} else if(dataLocator.contentEquals("DEL")){
-				
+				//DEL action goes here...
 			}
 		
+		TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Goals Value Sets']", MAX_TIME_OUT);
+		TaskUtilities.jsFindThenClick("//button[text()='ave and Close']");
+		TaskUtilities.customWaitForElementVisibility("//h1[contains(text(),'"+getExcelData(inputs, 7, "text")+"')]", MAX_TIME_OUT);
+		TaskUtilities.retryingFindClick(By.xpath(gotoTaskPath));
+		TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Goals Value Sets']", MAX_TIME_OUT);
+		//In the end, search for the created goal
+		labelLocator = getExcelData(inputLabel, 13, "text");
+		labelLocatorPath = TaskUtilities.retryingSearchInput(labelLocator);
+		type = TaskUtilities.getdataLocatorType(labelLocator);
+		dataLocator = getExcelData(inputs, 13, type);
+		TaskUtilities.consolidatedInputEncoder(task, labelLocatorPath, dataLocator);
+		TaskUtilities.jsFindThenClick("//button[text()='Search']");
+		TaskUtilities.customWaitForElementVisibility("//td[text()='"+dataLocator+"']", MAX_TIME_OUT);
+		takeScreenshot();
 		
+		log("Manage Worker Value Goal Settings creation has been completed.");
+		System.out.println("Manage Worker Value Goal Settings creation has been completed.");
 		
 	}
 }

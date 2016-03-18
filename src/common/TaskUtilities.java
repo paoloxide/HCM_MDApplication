@@ -17,6 +17,8 @@ import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import common.DuplicateEntryException;
+
 import common.BaseTest;
 import static util.ReportLogger.log;
 
@@ -173,8 +175,71 @@ public class TaskUtilities{
 			}
 			
 		}
+		Thread.sleep(250);
 		System.out.println("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
 		log("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+	}
+
+	public static void customWaitForElementEnablement(By by, int waitTime) throws Exception{
+		
+		long startTime = System.currentTimeMillis();
+		waitTime = waitTime * 1000;
+		
+		while(Boolean.parseBoolean(driver.findElement(by).getAttribute("disabled"))){
+			//Just wait here...
+			if(System.currentTimeMillis() - startTime > waitTime){
+				log(waitTime/1000 + " second/s has elapsed after waiting for: "+by+"\nNow throwing error.....\n");
+				throw new TimeoutException(waitTime/1000 + " second/s has elapsed after waiting for: "+by);
+			}
+			
+		}
+		Thread.sleep(250);
+		System.out.println("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+		log("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+	}
+	
+	public static void customWaitForElementEnablement(By by, int waitTime, CustomRunnable runner) throws Exception{
+		
+		long startTime = System.currentTimeMillis();
+		waitTime = waitTime * 1000;
+		
+		while(Boolean.parseBoolean(driver.findElement(by).getAttribute("disabled"))){
+			try{
+					runner.customRun();
+				} catch(StaleElementReferenceException e){
+					//Skips...
+				}
+			if(System.currentTimeMillis() - startTime > waitTime){
+					log(waitTime/1000 + " second/s has elapsed after waiting for: "+by+"\nNow throwing error.....\n");
+					throw new TimeoutException(waitTime/1000 + " second/s has elapsed after waiting for: "+by);
+				}
+			
+		}
+		Thread.sleep(250);
+		System.out.println("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+		log("Element is now visible after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+	}
+
+	public static void timedLoop(int waitTime, BooleanCustomRunnable booleanRunner) throws Exception{
+		boolean condition = true;
+		long startTime = System.currentTimeMillis();
+		waitTime = waitTime * 1000;
+		
+		while(condition){
+			try{
+					condition = booleanRunner.customRun();
+				} catch(StaleElementReferenceException e){
+					condition = true; //Then skips...
+				}
+			if(System.currentTimeMillis() - startTime > waitTime){
+					log(waitTime/1000 + " second/s has elapsed since the loop started...\nNow throwing error.....\n");
+					throw new TimeoutException(waitTime/1000 + " second/s has elapsed since the loop started...");
+				}
+			
+		}
+		Thread.sleep(250);
+		System.out.println("The loop has ended after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
+		log("The loop has ended after "+(System.currentTimeMillis() - startTime)/1000+" second/s.....");
 	}
 	
 	/**
@@ -185,11 +250,53 @@ public class TaskUtilities{
 	 * @author jerrick.m.falogme
 	 */
 	public static void consolidatedInputEncoder(BasePage bpInstance, String labelLocatorPath, String dataLocator) throws Exception{
-		jsScrollIntoView(labelLocatorPath);
-		retryingFindClick(By.xpath(labelLocatorPath));
-		//takeScreenshot();
-		driver.findElement(By.xpath(labelLocatorPath)).clear();
-		bpInstance.enterTextByXpath(labelLocatorPath, dataLocator);
+		int attempts = 0;
+		while(attempts < 3){
+		
+			try{ 
+					jsScrollIntoView(labelLocatorPath);
+					retryingFindClick(By.xpath(labelLocatorPath));
+					//takeScreenshot();
+					driver.findElement(By.xpath(labelLocatorPath)).clear();
+					bpInstance.enterTextByXpath(labelLocatorPath, dataLocator);
+					return;
+				} catch(StaleElementReferenceException e){
+					//Skips...
+				}
+			attempts += 1;
+		}
+		   
+        System.out.println("Failed to input dataLocator: "+dataLocator+ "to path: "+labelLocatorPath);
+        System.out.println("Throwing Error.....");
+        log("Failed to input dataLocator: "+dataLocator+ "to path: "+labelLocatorPath);
+        log("Throwing Error.....");
+        throw new StaleElementReferenceException("The input is no longer in the DOM\n");
+		
+	}
+	
+	public static void consolidatedStrictInputEncoder(final BasePage bpInstance, final String labelLocatorPath, final String dataLocator) throws Exception{
+		
+		timedLoop(15, new BooleanCustomRunnable() {
+			
+			@Override
+			public boolean customRun() throws Exception {
+				// TODO Auto-generated method stub
+				jsScrollIntoView(labelLocatorPath);
+				retryingFindClick(By.xpath(labelLocatorPath));
+				//takeScreenshot();
+				try{
+					driver.findElement(By.xpath(labelLocatorPath)).clear();
+				} catch(StaleElementReferenceException e){
+					//Skips clearance...
+				}
+				bpInstance.enterTextByXpath(labelLocatorPath, dataLocator);
+				Thread.sleep(100);
+				
+				return !driver.findElement(By.xpath(labelLocatorPath))
+						.getAttribute("value").contentEquals(dataLocator);
+			}
+		});
+		System.out.println("Input has been successfully encoded...");
 	}
 	
 	/**
@@ -221,8 +328,22 @@ public class TaskUtilities{
         		"//td/label[text()='"+dataLocator+"']/../../td/span/input",
         		"//td/label[text()='"+dataLocator+"']/../../td/span/span/input",
         		"//td/label[text()='"+dataLocator+"']/../../td/select",
+        		"//td/label[text()='"+dataLocator+"']/../../td/table/tbody/tr/td/input",
         		"//td/label[text()='"+dataLocator+"']/../../td/table/tbody/tr/td/table/tbody/tr/td/span/input"
         };
+        
+        if(dataLocator.isEmpty() || dataLocator == null){
+	        	System.out.println("The dataLocator: "+dataLocator+" cannot be a label.");
+	        	return null;
+	        }
+	        
+        try{
+        		System.out.println("Validating if dataLocator: "+dataLocator+" is visible.");
+	        	customWaitForElementVisibility("//td/label[text()='"+dataLocator+"']", 10);
+	        } catch(TimeoutException e){
+	        	System.out.println("The dataLocator: "+dataLocator+" cannot be a label.");
+	        	return null;
+	        }
         
         System.out.println("Attempting to find known valid path for dataLocator: "+dataLocator);
         while(attempts < inputTypesArray.length) {
@@ -301,7 +422,7 @@ public class TaskUtilities{
 		if((container.isEmpty() || container.contentEquals("")) && tempMsg.contains("Error")){
 			errMsg = driver.findElement(By.id("d1::msgDlg")).getText().replaceAll("OK", "").replace("Error", "");
 			log(errMsg);
-			throw new DuplicateNameEntryException("Error FOUND: \n"+errMsg);
+			throw new DuplicateEntryException("Error FOUND: \n"+errMsg);
 		}
 		
 	}
@@ -335,7 +456,7 @@ public class TaskUtilities{
 		if(container.contains("Error")){
 			errMsg = driver.findElement(By.xpath(msgPath)).getText().replaceAll("OK", "");
 			log(errMsg);
-			throw new DuplicateNameEntryException("Error FOUND: \n"+errMsg);
+			throw new DuplicateEntryException("Error FOUND: \n"+errMsg);
 		}
 		
 	}
@@ -348,6 +469,18 @@ public class TaskUtilities{
 					"}"+
 			"getElementByXPath(\""+dataPath+"\").click();"
 		);
+		
+		String text = driver.findElement(By.xpath(dataPath)).getText();
+		String tag = driver.findElement(By.xpath(dataPath)).getTagName();
+		
+		if(tag.contentEquals("a")){
+			tag = "link";
+		} else if(tag.contentEquals("span")){
+			tag = "button";
+		}
+		
+		log("Clicking "+text+" "+tag+"...");
+		System.out.println("Clicking "+text+" "+tag+"...");
 	}
 
 	public static void jsScrollIntoView(String dataPath){

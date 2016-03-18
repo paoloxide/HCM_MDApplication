@@ -6,6 +6,7 @@ import static util.ReportLogger.logDebug;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -60,6 +61,7 @@ public class ExcelUtilities {
       	  		System.out.println("Excel Input has been passed as a Date");
       	  		Cell.setCellType(Cell.CELL_TYPE_NUMERIC);
       	  		Date date = Cell.getDateCellValue();
+      	  		System.out.println("Old value is : "+date);
       	  		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
       	  		String dateCellData = sdf.format(date);
       	  		System.out.println("the value is now: "+dateCellData);
@@ -188,5 +190,5 @@ public class ExcelUtilities {
                       throw (e);
               }
           }
-
+		
 }

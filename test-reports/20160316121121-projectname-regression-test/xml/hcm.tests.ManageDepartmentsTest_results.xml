@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Manage Departments 1"
+           tests="1"
+           failures="0"
+           errors="0"
+           skipped="0"
+           time="278.415">
+  <properties />
+  
+  
+            <testcase name="a_test" time="278.415" classname="hcm.tests.ManageDepartmentsTest" />
+      
+</testsuite>

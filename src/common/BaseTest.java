@@ -229,7 +229,7 @@ public class BaseTest {
 				 URL("http://selenium-hub:4444/wd/hub"),
 				 DesiredCapabilities.firefox());
 				//driver = new RemoteWebDriver(new URL(
-						//"http://10.251.67.231:4444/wd/hub"),
+					//	"http://10.251.67.231:4444/wd/hub"),
 						//DesiredCapabilities.firefox());
 				//driver = new
 				//ExtendedFirefoxDriver(createCapabilities(webBrowser));
@@ -3718,6 +3718,14 @@ public class BaseTest {
 		}
 		return value;
 
+	}
+	
+	public int getLastNonNullRow(int firstNonNullRow){
+		int rowNum = firstNonNullRow;
+		while(getExcelData(rowNum, 7, "text").length()>0){
+			rowNum += 1;
+		}
+		return rowNum;
 	}
 
 	// Edited jerrick.m.falogme.....

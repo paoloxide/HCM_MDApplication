@@ -7,7 +7,6 @@ package common;
  * 
  * @author jerrick.m.falogme
  */
-
 public interface CustomRunnable {
 	
 	void customRun()throws Exception;

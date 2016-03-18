@@ -3,27 +3,19 @@ package hcm.tests;
 import static util.ReportLogger.log;
 import static util.ReportLogger.logFailure;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static common.ExcelUtilities.getCellType;
-
 import org.openqa.selenium.By;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.internal.FindsByXPath;
 import org.testng.annotations.Test;
 
 import common.BaseTest;
+import common.CustomRunnable;
+import common.DuplicateEntryException;
 import common.TaskUtilities;
 import hcm.pageobjects.FuseWelcomePage;
 import hcm.pageobjects.LoginPage;
-import hcm.pageobjects.TaskListManagerTopPage;
 import hcm.pageobjects.WorkforceStructureTasksPage;
-import static util.ReportLogger.log;
-import static util.ReportLogger.logFailure;
 
 public class ManageDepartmentsTest extends BaseTest{
+	private static final int MAX_TIME_OUT = 30;
 	@Test
 	public void a_test() throws Exception  {
 		testReportFormat();
@@ -64,132 +56,152 @@ public class ManageDepartmentsTest extends BaseTest{
 			
 		WorkforceStructureTasksPage task = new WorkforceStructureTasksPage(driver);
 		takeScreenshot();
-		
-		task.waitForElementToBeClickable(60, "//li/a[text()='Manage Departments']");
-		task.clickTask("Manage Departments");
-		Thread.sleep(5000);
-		//takeScreenshot();
-		
-		task.clickCreate();
-		Thread.sleep(5000);
-		//task.waitForElementToBeClickable(10, "//td/label[text()='Effective Start Date']/../../td/input");
 
 		//Enable task
 		int inputLabel = 7;
 		int inputs = 8;
-		int rowNum = 8;
-		long startTime;
-		final int TIMEOUT_IN_MILLIS = 60000;
-		String type, inputValue, dataLocator, dataPath, nextDataLocator = "", nextDataPath;
 		boolean isScrollingDown = true;
-
-		task.waitForElementToBeClickable(10, "//td/label[text()='"+getExcelData(inputLabel, 8, "text")+"']/../../td/input");
-		inputloop:
-		for(int colNum = 8;getExcelData(inputLabel, colNum, "text").length()>0; colNum++){
-			dataLocator = getExcelData(inputLabel, colNum, "text");
-			System.out.println("Filtering text....."+dataLocator);
-			dataLocator = task.filterDataLocator(dataLocator);
-			
-			/*if(getCellType(inputLabel, colNum) == 1){
-						type = "text";
-
-				}*/if(dataLocator.contains("Date")){
-						type = "date";
-					}else if(dataLocator.contains("Time")){
-						type = "time";
-					}else{
-						type = "text";
-					}
-				
-			inputValue = getExcelData(inputs, colNum, type);
-			System.out.println("Input value....."+inputValue);
-			
-			//Proceed on Iterating all the inputs....
-			dataPath =  TaskUtilities.retryingSearchInput(dataLocator);
-			
-			if(dataPath.indexOf("select") != -1){
-					TaskUtilities.jsFindThenClick(dataPath);
-					if(!inputValue.isEmpty() || !inputValue.contentEquals("")){
-							TaskUtilities.jsFindThenClick(dataPath+"/option[text()='"+inputValue+"']");
-							
-						} else{
-							//Do nothing here...
-						}
-				} else{
-
-					TaskUtilities.jsFindThenClick(dataPath);
-					driver.findElement(By.xpath(dataPath)).clear();
-					task.enterTextByXpath(dataPath, inputValue);
+		String btnYesPath = "//button[text()='es']";
+		String btnOKPath = "//button[text()='O']";
+		String btnSearchPath = "//button[text()='Search']";
+		String nextDataLocator = "", searchData = "";
+		String type, inputValue, dataLocator, dataPath, nextDataPath;
+		
+		int attempts = getLastNonNullRow(7);
+		String confMsg = "\n===============\nReport Summary:\n";
+		String inputLocator = getExcelData(inputs, 7, "text");
+		attemptloop:
+		while(attempts >= 0){
+			try{	
 					
-				}
-			
-			//Triggering Next Button.....
-			takeScreenshot();
-			System.out.println("Checking next data locator.....");
-			takeScreenshot();
-			nextDataLocator = getExcelData(inputLabel, colNum+1, "text");
-			nextDataLocator = task.filterDataLocator(nextDataLocator);
-			nextDataPath = TaskUtilities.retryingSearchInput(nextDataLocator);
-			
-			if(nextDataLocator.isEmpty() || nextDataLocator.contentEquals("")){
-					break inputloop;
-				
-				}else if(nextDataPath == null){
-						takeScreenshot();
-						Thread.sleep(500); task.clickNext();
-						takeScreenshot();
-						Thread.sleep(1000);
-						takeScreenshot();
-						//Stop the loop after a set amount of time.....
-						startTime = System.currentTimeMillis(); 
-						while(!is_element_visible("//td/label[text()='"+nextDataLocator+"']", "xpath")){
-							TaskUtilities.jsCheckMessageContainer();
-							TaskUtilities.jsCheckMissedInput();
+					while(!inputLocator.isEmpty() && !inputLocator.contentEquals("")){
+					
+						task.waitForElementToBeClickable(60, "//li/a[text()='Manage Departments']");
+						task.clickTask("Manage Departments");
+						
+						//takeScreenshot();
+						TaskUtilities.customWaitForElementVisibility("//h1[text()='Manage Departments']", MAX_TIME_OUT);
+						
+								TaskUtilities.retryingFindClick(By.xpath("//span[text()=' Create']"));
+								System.out.println("Clicking Create icon...");
+								
+						TaskUtilities.customWaitForElementVisibility("//td/label[text()='"+
+								task.filterDataLocator(getExcelData(inputLabel, 8, "text"))+
+								"']/../../td/input", MAX_TIME_OUT);
+						
+						inputloop:
+						for(int colNum = 8;getExcelData(inputLabel, colNum, "text").length()>0; colNum++){
+							System.out.println("\n**********");
+							dataLocator = getExcelData(inputLabel, colNum, "text");
+							System.out.println("Filtering text....."+dataLocator);
+							dataLocator = task.filterDataLocator(dataLocator);
+							type =TaskUtilities.getdataLocatorType(dataLocator);
+								
+							inputValue = getExcelData(inputs, colNum, type);
+							System.out.println("Input value....."+inputValue);
 							
-							if(System.currentTimeMillis()-startTime > TIMEOUT_IN_MILLIS){
-								throw new TimeoutException(TIMEOUT_IN_MILLIS/1000+" seconds has passed after waiting for the element...");
-							}
+							//Proceed on Iterating all the inputs....
+							dataPath =  TaskUtilities.retryingSearchInput(dataLocator);
+							
+							if(dataPath.indexOf("select") != -1){
+									TaskUtilities.consolidatedInputSelector(dataPath, inputValue);
+								} else{
+									TaskUtilities.consolidatedInputEncoder(task, dataPath, inputValue);
+								}
+							
+							//Triggering Next Button.....
+							System.out.println("Checking next data locator.....");
+							nextDataLocator = getExcelData(inputLabel, colNum+1, "text");
+							nextDataLocator = task.filterDataLocator(nextDataLocator);
+							nextDataPath = TaskUtilities.retryingSearchInput(nextDataLocator);
+							
+							if(nextDataLocator.isEmpty() || nextDataLocator.contentEquals("")){
+									break inputloop;
+								
+								}else if(nextDataPath == null){
+										Thread.sleep(500); task.clickNext();
+										TaskUtilities.customWaitForElementVisibility("//td/label[text()='"+nextDataLocator+"']", MAX_TIME_OUT, new CustomRunnable() {
+											
+											@Override
+											public void customRun() throws Exception {
+												// TODO Auto-generated method stub
+												TaskUtilities.jsCheckMessageContainer();
+												TaskUtilities.jsCheckMissedInput();
+											}
+										});
+									}
 						}
+					
+						Thread.sleep(1000);
+						task.clickSubmitButton();
+						TaskUtilities.customWaitForElementVisibility(btnYesPath, MAX_TIME_OUT, new CustomRunnable() {
+							
+							@Override
+							public void customRun() throws Exception {
+								// TODO Auto-generated method stub
+								TaskUtilities.jsCheckMissedInput();
+								TaskUtilities.jsCheckMessageContainer();
+							}
+						});
+						task.clickYesButton();
+						TaskUtilities.customWaitForElementVisibility(btnOKPath, MAX_TIME_OUT);
+						task.clickOKButton();
+						takeScreenshot();
+						//task.clickSaveandCloseButton();
+						Thread.sleep(5000); 
+						
+						//Verifying if the department has been added.....
+						//task.clickTask("Manage Departments");
+						//TaskUtilities.customWaitForElementVisibility(btnSearchPath, MAX_TIME_OUT);
+						searchData = getExcelData(inputs, 10, "text");
+						searchData = task.filterDataLocator(searchData);
+						//String dataSearchPath = TaskUtilities.retryingSearchInput("Name");
+						//TaskUtilities.consolidatedStrictInputEncoder(task, dataSearchPath, searchData);
+						
+						//Test Case Verification process...
+						//TaskUtilities.consolidatedInputEncoder(task, dataSearchPath, searchData);
+						//task.clickSearchButton();
+						//Thread.sleep(5000);
+						//task.clickSearchButton();
+						//Thread.sleep(5000);
+						//TaskUtilities.customWaitForElementVisibility("//a[text()='"+searchData+"']", MAX_TIME_OUT);
+						takeScreenshot();
+						
+						confMsg += "Department "+searchData+" has been created.\n";
+						log("Department "+searchData+" has been created.\n");
+						System.out.println("Department "+searchData+" has been created.\n");
+						
+						inputs += 1;
+						inputLocator = getExcelData(inputs, 7, "text");
 					}
+			
+					break attemptloop;
+				
+				} catch(DuplicateEntryException e){	
+					
+					e.printStackTrace();
+					String eMsg = e.toString().substring(e.toString().indexOf(".")+1, e.toString().indexOf(":"));
+					searchData = getExcelData(inputs, 10, "text");
+					searchData = task.filterDataLocator(searchData);
+					confMsg += "Failed to create Department "+searchData+". caused by: "+eMsg+"...\n";
+					log("Failed to create Department "+searchData+". caused by: "+eMsg+"...\n");
+					System.out.println("Failed to create Department "+searchData+". caused by: "+eMsg+"...\n");
+					takeScreenshot();
+					
+					if(is_element_visible("//span[text()='ancel']", "xpath")){
+						TaskUtilities.jsFindThenClick("//span[text()='ancel']");
+						TaskUtilities.customWaitForElementVisibility("//button[text()='es']", MAX_TIME_OUT);
+						TaskUtilities.jsFindThenClick("//button[text()='es']");
+
+					}
+					inputs += 1;
+					inputLocator = getExcelData(inputs, 7, "text");
+					attempts -= 1;
+				}
 		}
-	
-		
-		Thread.sleep(3000);
-		task.clickSubmitButton();
-		task.waitForElementToBeClickable(10, "//button[text()='es']"); Thread.sleep(250);
-		task.clickYesButton();
-		task.waitForElementToBeClickable(10, "//button[text()='O']"); Thread.sleep(250);
-		task.clickOKButton();
-		//task.clickSaveandCloseButton();
-		Thread.sleep(5000);
-		
-		//Verifying if the department has been added.....
-		task.clickTask("Manage Departments");
-		Thread.sleep(10000);
-		//task.enterSearchData("Name", getExcelData(inputs, 10, "text"));
-		String searchData = getExcelData(inputs, 10, "text");
-		searchData = task.filterDataLocator(searchData);
-		String dataSearchPath = TaskUtilities.retryingSearchInput("Name");
-		TaskUtilities.jsFindThenClick(dataSearchPath);
-		driver.findElement(By.xpath(dataSearchPath)).clear();
-		task.enterTextByXpath(dataSearchPath, searchData);
-		
-		
-		startTime = System.currentTimeMillis();
-		while(!task.jsGetInputValue(dataSearchPath).contentEquals(searchData)){
-			if(System.currentTimeMillis()-startTime > TIMEOUT_IN_MILLIS){
-				throw new TimeoutException(TIMEOUT_IN_MILLIS/1000+" seconds has passed after waiting for the element...");
-			}
-		}
-		
-		//Test Case Verification process...
-		task.clickSearchButton();
-		Thread.sleep(2000);
-		task.clickSearchButton();
-		Thread.sleep(10000);
-		takeScreenshot();
-		
-		TaskUtilities.jsFindThenClick("//a[text()='"+searchData+"']");
+		confMsg += "===============\n";
+		System.out.println(confMsg);
+		/*TaskUtilities.jsFindThenClick("//a[text()='"+searchData+"']");
 		Thread.sleep(7500);
 		takeScreenshot();
 		
@@ -198,20 +210,20 @@ public class ManageDepartmentsTest extends BaseTest{
 		takeScreenshot();
 		
 		isScrollingDown = task.jsScrollDown(isScrollingDown);
-		takeScreenshot();
+		takeScreenshot();*/
 		
 		//Thread.sleep(3000);
 		//task.clickSaveandCloseButton();
 		//Thread.sleep(10000);
 		
 		//Ending message::
-				Thread.sleep(5000);
-				//takeScreenshot();
-				
-				System.out.println("Department Creation Completed\n***************\n");
-				log("Department Creation Completed");
-				
-				Thread.sleep(1500);
-				//takeScreenshot();
+		Thread.sleep(5000);
+		//takeScreenshot();
+			
+		System.out.println("Department Creation Completed\n***************\n");
+		log("Department Creation Completed");
+			
+		Thread.sleep(1500);
+		//takeScreenshot();
 	}
 }
