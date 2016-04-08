@@ -1,0 +1,13 @@
+-------------------------------------------------------------------------------
+Test set: TestSuite
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 338.783 sec <<< FAILURE! - in TestSuite
+a_test(hcm.tests.ManageDepartmentsTest)  Time elapsed: 302.479 sec  <<< FAILURE!
+org.openqa.selenium.TimeoutException: 30 second/s has elapsed after waiting for: //a[text()='ACN DOP DEPv1_10b1']
+Build info: version: '2.52.0', revision: '4c2593cfc3689a7fcd7be52549167e5ccc93ad28', time: '2016-02-11 11:22:43'
+System info: host: 'ETDB-510P680-D', ip: '169.254.231.255', os.name: 'Windows 7', os.arch: 'amd64', os.version: '6.1', java.version: '1.7.0_79'
+Driver info: driver.version: unknown
+	at common.TaskUtilities.customWaitForElementVisibility(TaskUtilities.java:174)
+	at hcm.tests.ManageDepartmentsTest.createDepartment(ManageDepartmentsTest.java:163)
+	at hcm.tests.ManageDepartmentsTest.a_test(ManageDepartmentsTest.java:24)
+
